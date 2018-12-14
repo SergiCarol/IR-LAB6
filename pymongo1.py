@@ -1,5 +1,6 @@
 from pymongo import MongoClient
 import csv
+from codecs import encode, decode
 from bson.code import Code
 
 # server on localhost
@@ -27,7 +28,7 @@ def map_reduce():
     mapper_pairs = Code("""
         function() {
             for (var i = 0; i < this.data.length; i++) {
-                for (var j = i+1; j <= this.data.length; j++){
+                for (var j = i+1; j < this.data.length; j++){
                     emit(this.data[i] + "," + this.data[j], 1);
                     emit(this.data[j] + "," + this.data[i], 1);
                     }
@@ -55,23 +56,33 @@ def map_reduce():
     db.test.map_reduce(mapper_pairs, reducer, "count_pairs")
 
 
-def associations(support, confidence, n):
-
-    result_terms = db.count_pairs.find()
-    for element in result_terms:
-        print element
+def associations(supconf):
+    counter = []
+    for sup, conf in supconf:
+        c = 0
+        for element in support.keys():
+            if support[element] > sup and confidence[element] > conf:
+                c += 1
+        counter.append("Support: %d, Coinfidence %d, Associations: %d" % (sup, conf, c))
+    return counter
 
 
 def calculate_associations(total_length):
-    result_terms = db.count_terms.find()
     result_pairs = db.count_pairs.find()
 
-    for element in result_terms:
-        print element
+    for element in result_pairs:
+        support[element['_id']] = float(element['value'] * 100 / total_length)
+        x = element['_id'].split(',')[0]
+        result_terms = db.count_terms.find({'_id': x})[0]
+        confidence[element['_id']] = float(
+            element['value'] * 100 / result_terms['value'])
 
 
 if __name__ == '__main__':
     total_length = read_file('groceries.csv')
-    print total_length
     map_reduce()
-    calculate_associations(total_length) 
+    calculate_associations(total_length)
+    items = [(1, 1), (1, 25), (1, 50), (1, 75), (5, 25), (7, 25),
+             (20, 25), (50, 25)]
+    for element in associations(items):
+        print element
