@@ -58,13 +58,17 @@ def map_reduce():
 
 def associations(supconf):
     counter = []
+    total_elements = []
     for sup, conf in supconf:
         c = 0
+        elements_with_rule = []
         for element in support.keys():
             if support[element] > sup and confidence[element] > conf:
                 c += 1
+                elements_with_rule.append(element)
         counter.append("Support: %d, Coinfidence %d, Associations: %d" % (sup, conf, c))
-    return counter
+        total_elements.append(elements_with_rule)
+    return counter, total_elements
 
 
 def calculate_associations(total_length):
@@ -84,5 +88,12 @@ if __name__ == '__main__':
     calculate_associations(total_length)
     items = [(1, 1), (1, 25), (1, 50), (1, 75), (5, 25), (7, 25),
              (20, 25), (50, 25)]
-    for element in associations(items):
+    table, pairs = associations(items)
+    print "Task 1\n\n"
+    for element in table:
         print element
+    print "*" * 10
+    print "Task 2\n\n"
+    print "Association rules for 1, 75", pairs[3]
+    print "Association rules for 5, 25", pairs[4]
+    print "Association rules for 7, 25", pairs[5]
